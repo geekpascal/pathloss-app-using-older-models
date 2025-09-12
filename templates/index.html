@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pathloss Prediction System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📡 Pathloss Prediction System</h1>
+            <p>Enter the parameters below to predict signal pathloss</p>
+        </header>
+
+        <form id="pathlossForm" class="prediction-form">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="frequency">📶 Frequency (MHz)</label>
+                    <input type="number" id="frequency" name="frequency" placeholder="e.g., 900.0" step="0.1" required>
+                    <small>Operating frequency in MHz</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="distance">📏 Distance (km)</label>
+                    <input type="number" id="distance" name="distance" placeholder="e.g., 5.0" step="0.1" required>
+                    <small>Distance between transmitter and receiver</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="tx_height">📡 Transmitter Height (m)</label>
+                    <input type="number" id="tx_height" name="tx_height" placeholder="e.g., 30.0" step="0.1" required>
+                    <small>Height of transmitting antenna</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="rx_height">📱 Receiver Height (m)</label>
+                    <input type="number" id="rx_height" name="rx_height" placeholder="e.g., 1.5" step="0.1" required>
+                    <small>Height of receiving antenna</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="environment">🌍 Environment Type</label>
+                    <select id="environment" name="environment" required>
+                        <option value="">Select Environment</option>
+                        <option value="Urban">🏢 Urban</option>
+                        <option value="Suburban">🏘️ Suburban</option>
+                        <option value="Rural">🌾 Rural</option>
+                        <option value="Dense Urban">🏙️ Dense Urban</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="model">🔬 Prediction Model</label>
+                    <select id="model" name="model" required>
+                        <option value="">Select Model</option>
+                        <option value="ECC-33">ECC-33 Path Loss Model</option>
+                        <option value="SUI">SUI Path Loss Model</option>
+                        <option value="Okumura-Hata">Okumura-Hata Model</option>
+                    </select>
+                    <small>Choose the prediction model to use</small>
+                </div>
+            </div>
+
+            <button type="submit" class="predict-btn">
+                <span class="btn-text">Predict Pathloss</span>
+                <span class="btn-loading" style="display: none;">Calculating...</span>
+            </button>
+        </form>
+
+        <div id="results" class="results-section" style="display: none;">
+            <h2>📊 Prediction Results</h2>
+            <div class="result-card">
+                <div class="result-value">
+                    <span class="pathloss-value" id="pathlossValue">--</span>
+                    <span class="unit">dB</span>
+                </div>
+                <div class="result-details">
+                    <p><strong>Model:</strong> <span id="usedModel">--</span></p>
+                    <p><strong>Environment:</strong> <span id="usedEnvironment">--</span></p>
+                    <div class="parameters">
+                        <h3>Input Parameters:</h3>
+                        <ul id="parametersList"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="error" class="error-message" style="display: none;"></div>
+
+        <footer>
+            <div class="model-info">
+                <h3>📚 Supported Models</h3>
+                <div class="model-cards">
+                    <div class="model-card">
+                        <h4>ECC-33</h4>
+                        <p>European Communications Committee model for cellular networks</p>
+                    </div>
+                    <div class="model-card">
+                        <h4>SUI</h4>
+                        <p>Stanford University Interim model for wireless communications</p>
+                    </div>
+                    <div class="model-card">
+                        <h4>Okumura-Hata</h4>
+                        <p>Widely used empirical model for mobile communications</p>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
