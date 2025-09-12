@@ -15,13 +15,13 @@ class PathlossModels:
         try:
             # Free space loss
             Afs = 32.45 + 20 * math.log10(frequency) + 20 * math.log10(distance)
-
+            
             # Basic median loss
             Abm = 20.41 + 9.83 * math.log10(distance) + 7.894 * math.log10(frequency) + 9.56 * (math.log10(frequency))**2
-
+            
             # Transmitter antenna height gain
             G_htx = 13.958 + 5.8 * (math.log10(min(tx_height, 200)))**2
-
+            
             # Receiver antenna height gain (corrected ECC-33 formula)
             # For mobile antennas, height gain should be positive (reduces pathloss)
             if rx_height <= 3:
@@ -31,18 +31,16 @@ class PathlossModels:
                 G_hrx = 20 + 10 * math.log10(rx_height)  # Simplified positive gain
 
             # Area correction factor (verified coefficients)
-            if environment == 'Dense Urban':
-                G_area = 0
-            elif environment == 'Urban':
+            if environment == 'Urban':
                 G_area = 2 * (math.log10(frequency/28))**2 + 5.4
             elif environment == 'Suburban':
                 G_area = 2 * (math.log10(frequency/28))**2 + 5.4 - 3.0  # Corrected suburban correction
             else:  # Rural
                 G_area = 4.78 * (math.log10(frequency))**2 - 18.33 * math.log10(frequency) + 40.94
-
+            
             pathloss = Afs + Abm - G_htx - G_hrx - G_area
             return max(pathloss, 0)  # Ensure non-negative result
-
+            
         except Exception as e:
             app.logger.error(f"ECC-33 calculation error: {e}")
             return None
@@ -55,14 +53,9 @@ class PathlossModels:
         """
         try:
             d0 = 0.1  # Reference distance in km
-
+            
             # Terrain parameters based on environment (correct SUI parameters)
-            if environment == 'Dense Urban':
-                # Category C (Dense Urban)
-                a = 4.6
-                b = 0.0075
-                c = 12.6
-            elif environment == 'Urban':
+            if environment == 'Urban':
                 # Category C (Urban)
                 a = 4.6
                 b = 0.0075
@@ -77,30 +70,30 @@ class PathlossModels:
                 a = 3.6
                 b = 0.005
                 c = 20.0
-
+            
             # Path loss exponent
             gamma = a - b * tx_height + c / tx_height
-
+            
             # Basic path loss at reference distance
             A = 20 * math.log10(4 * math.pi * d0 * frequency * 1e6 / 3e8)
-
+            
             # Distance factor
             distance_factor = 10 * gamma * math.log10(distance / d0)
-
+            
             # Frequency correction (Xf)
             Xf = 6 * math.log10(frequency / 2000)
-
+            
             # Receiver height correction (Xh) - corrected coefficients
-            if environment in ['Dense Urban', 'Urban']:
+            if environment == 'Urban':
                 Xh = -10.8 * math.log10(rx_height / 2)
             elif environment == 'Suburban':
                 Xh = -10.8 * math.log10(rx_height / 2)  # Same as urban for suburban
             else:  # Rural
                 Xh = -20 * math.log10(rx_height / 2)
-
+            
             pathloss = A + distance_factor + Xf + Xh
             return max(pathloss, 0)
-
+            
         except Exception as e:
             app.logger.error(f"SUI calculation error: {e}")
             return None
@@ -118,7 +111,7 @@ class PathlossModels:
                 return PathlossModels._extended_hata_model(frequency, distance, tx_height, rx_height, environment)
             
             # Mobile antenna height correction factor a(hre)
-            if environment in ['Dense Urban', 'Urban']:
+            if environment == 'Urban':
                 # Large cities
                 if frequency >= 400:
                     a_hre = 3.2 * (math.log10(11.75 * rx_height))**2 - 4.97
@@ -139,10 +132,8 @@ class PathlossModels:
             elif environment == 'Rural':
                 # Open rural area correction
                 correction = -4.78 * (math.log10(frequency))**2 + 18.33 * math.log10(frequency) - 40.94
-            else:  # Urban or Dense Urban
+            else:  # Urban
                 correction = 0
-                if environment == 'Dense Urban':
-                    correction += 3  # Additional loss for very dense urban areas
             
             pathloss = L50_urban + correction
             
@@ -160,7 +151,7 @@ class PathlossModels:
         """
         try:
             # Mobile antenna height correction
-            if environment in ['Dense Urban', 'Urban']:
+            if environment == 'Urban':
                 a_hre = 3.2 * (math.log10(11.75 * rx_height))**2 - 4.97
             else:
                 a_hre = (1.1 * math.log10(frequency) - 0.7) * rx_height - (1.56 * math.log10(frequency) - 0.8)

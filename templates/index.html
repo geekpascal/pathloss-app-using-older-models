@@ -3,112 +3,219 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pathloss Prediction System</title>
+    <title>Advanced Pathloss Prediction</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Montserrat:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>📡 Pathloss Prediction System</h1>
-            <p>Enter the parameters below to predict signal pathloss</p>
+        <header class="main-header">
+            <h1>Pathloss Prediction Engine</h1>
+            <p class="subtitle">A modern tool for accurate signal loss estimation.</p>
         </header>
 
-        <form id="pathlossForm" class="prediction-form">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="frequency">📶 Frequency (MHz)</label>
-                    <input type="number" id="frequency" name="frequency" placeholder="e.g., 900.0" step="0.1" required>
-                    <small>Operating frequency in MHz</small>
-                </div>
+        <main>
+            <div class="card">
+                <form id="pathlossForm">
+                    <fieldset>
+                        <legend>Simulation Parameters</legend>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="frequency">Frequency (MHz)</label>
+                                <input type="number" id="frequency" name="frequency" placeholder="e.g., 900" required>
+                                <small class="input-hint">Range: 150-11000 MHz</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="distance">Distance (km)</label>
+                                <input type="number" id="distance" name="distance" placeholder="e.g., 5" required>
+                                <small class="input-hint">Range: 0.1-100 km</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="tx_height">Transmitter Height (m)</label>
+                                <input type="number" id="tx_height" name="tx_height" placeholder="e.g., 30" required>
+                                <small class="input-hint">Range: 10-200 m</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="rx_height">Receiver Height (m)</label>
+                                <input type="number" id="rx_height" name="rx_height" placeholder="e.g., 1.5" required>
+                                <small class="input-hint">Range: 1-10 m</small>
+                            </div>
+                        </div>
+                    </fieldset>
 
-                <div class="form-group">
-                    <label for="distance">📏 Distance (km)</label>
-                    <input type="number" id="distance" name="distance" placeholder="e.g., 5.0" step="0.1" required>
-                    <small>Distance between transmitter and receiver</small>
-                </div>
+                    <fieldset>
+                        <legend>Model & Environment</legend>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="environment">Environment Type</label>
+                                <select id="environment" name="environment" required>
+                                    <option value="" disabled selected>Select an environment</option>
+                                    <option value="Urban">Urban</option>
+                                    <option value="Suburban">Suburban</option>
+                                    <option value="Rural">Rural</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="model">Prediction Model</label>
+                                <select id="model" name="model" required>
+                                    <option value="" disabled selected>Select a model</option>
+                                    <option value="ECC-33">ECC-33 (European)</option>
+                                    <option value="SUI">SUI (Stanford)</option>
+                                    <option value="Okumura-Hata">Okumura-Hata (Empirical)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </fieldset>
 
-                <div class="form-group">
-                    <label for="tx_height">📡 Transmitter Height (m)</label>
-                    <input type="number" id="tx_height" name="tx_height" placeholder="e.g., 30.0" step="0.1" required>
-                    <small>Height of transmitting antenna</small>
-                </div>
+                    <button type="submit" class="cta-button">
+                        <span class="btn-text">Calculate Pathloss</span>
+                        <span class="btn-loader" style="display: none;"></span>
+                    </button>
+                </form>
+            </div>
 
-                <div class="form-group">
-                    <label for="rx_height">📱 Receiver Height (m)</label>
-                    <input type="number" id="rx_height" name="rx_height" placeholder="e.g., 1.5" step="0.1" required>
-                    <small>Height of receiving antenna</small>
+            <div id="results-container" class="results-card" style="display: none;">
+                <div class="result-header">
+                    <h2>Prediction Result</h2>
                 </div>
-
-                <div class="form-group">
-                    <label for="environment">🌍 Environment Type</label>
-                    <select id="environment" name="environment" required>
-                        <option value="">Select Environment</option>
-                        <option value="Urban">🏢 Urban</option>
-                        <option value="Suburban">🏘️ Suburban</option>
-                        <option value="Rural">🌾 Rural</option>
-                        <option value="Dense Urban">🏙️ Dense Urban</option>
-                    </select>
+                <div class="result-display">
+                    <div class="pathloss-main">
+                    <span id="pathlossValue" class="pathloss-value">--</span>
+                    <span class="pathloss-unit">dB</span>
+                    </div>
+                    <div class="pathloss-context">
+                        <div class="context-item">
+                            <span class="context-label">Free Space Loss:</span>
+                            <span id="fsplValue" class="context-value">-- dB</span>
+                        </div>
+                        <div class="context-item">
+                            <span class="context-label">Additional Loss:</span>
+                            <span id="additionalLossValue" class="context-value">-- dB</span>
+                        </div>
+                    </div>
                 </div>
-
-                <div class="form-group">
-                    <label for="model">🔬 Prediction Model</label>
-                    <select id="model" name="model" required>
-                        <option value="">Select Model</option>
-                        <option value="ECC-33">ECC-33 Path Loss Model</option>
-                        <option value="SUI">SUI Path Loss Model</option>
-                        <option value="Okumura-Hata">Okumura-Hata Model</option>
-                    </select>
-                    <small>Choose the prediction model to use</small>
+                <div class="result-details">
+                    <h3>Configuration Details</h3>
+                    <div class="details-grid">
+                        <div class="detail-card">
+                            <div class="detail-header">
+                                <span class="detail-title">Model</span>
+                            </div>
+                            <span id="usedModel" class="detail-value">--</span>
+                        </div>
+                        <div class="detail-card">
+                            <div class="detail-header">
+                                <span class="detail-title">Environment</span>
+                            </div>
+                            <span id="usedEnvironment" class="detail-value">--</span>
+                        </div>
+                        <div class="detail-card">
+                            <div class="detail-header">
+                                <span class="detail-title">Frequency</span>
+                            </div>
+                            <span id="usedFrequency" class="detail-value">-- MHz</span>
+                        </div>
+                        <div class="detail-card">
+                            <div class="detail-header">
+                                <span class="detail-title">Distance</span>
+                            </div>
+                            <span id="usedDistance" class="detail-value">-- km</span>
+                        </div>
+                        <div class="detail-card">
+                            <div class="detail-header">
+                                <span class="detail-title">Tx Height</span>
+                            </div>
+                            <span id="usedTxHeight" class="detail-value">-- m</span>
+                        </div>
+                        <div class="detail-card">
+                            <div class="detail-header">
+                                <span class="detail-title">Rx Height</span>
+                            </div>
+                            <span id="usedRxHeight" class="detail-value">-- m</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <button type="submit" class="predict-btn">
-                <span class="btn-text">Predict Pathloss</span>
-                <span class="btn-loading" style="display: none;">Calculating...</span>
-            </button>
-        </form>
+            <div id="error-container" class="error-box" style="display: none;"></div>
+        </main>
 
-        <div id="results" class="results-section" style="display: none;">
-            <h2>📊 Prediction Results</h2>
-            <div class="result-card">
-                <div class="result-value">
-                    <span class="pathloss-value" id="pathlossValue">--</span>
-                    <span class="unit">dB</span>
+        <!-- Model Information Section -->
+        <div class="models-section">
+            <h2 class="section-title">Supported Models Details</h2>
+            <div class="models-grid">
+                <div class="model-card" data-model="ECC-33">
+                    <div class="model-header">
+                        <h3>ECC-33</h3>
+                        <span class="model-badge">European</span>
+                    </div>
+                    <p class="model-description">European Communications Committee model for cellular networks. Optimized for European terrain and propagation conditions.</p>
+                    <div class="model-specs">
+                        <div class="spec-item">
+                            <span class="spec-label">Frequency Range:</span>
+                            <span class="spec-value">150-2000 MHz</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Distance Range:</span>
+                            <span class="spec-value">1-100 km</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Best For:</span>
+                            <span class="spec-value">Cellular networks</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="result-details">
-                    <p><strong>Model:</strong> <span id="usedModel">--</span></p>
-                    <p><strong>Environment:</strong> <span id="usedEnvironment">--</span></p>
-                    <div class="parameters">
-                        <h3>Input Parameters:</h3>
-                        <ul id="parametersList"></ul>
+
+                <div class="model-card" data-model="SUI">
+                    <div class="model-header">
+                        <h3>SUI</h3>
+                        <span class="model-badge">Stanford</span>
+                    </div>
+                    <p class="model-description">Stanford University Interim model for wireless communications. Designed for broadband wireless access systems.</p>
+                    <div class="model-specs">
+                        <div class="spec-item">
+                            <span class="spec-label">Frequency Range:</span>
+                            <span class="spec-value">1900-11000 MHz</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Distance Range:</span>
+                            <span class="spec-value">0.1-8 km</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Best For:</span>
+                            <span class="spec-value">WiMAX, 4G/5G</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="model-card" data-model="Okumura-Hata">
+                    <div class="model-header">
+                        <h3>Okumura-Hata</h3>
+                        <span class="model-badge">Empirical</span>
+                    </div>
+                    <p class="model-description">Widely used empirical model for mobile communications. Based on extensive measurements in Tokyo area.</p>
+                    <div class="model-specs">
+                        <div class="spec-item">
+                            <span class="spec-label">Frequency Range:</span>
+                            <span class="spec-value">150-2000 MHz</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Distance Range:</span>
+                            <span class="spec-value">1-100 km</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Best For:</span>
+                            <span class="spec-value">Mobile communications</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div id="error" class="error-message" style="display: none;"></div>
-
-        <footer>
-            <div class="model-info">
-                <h3>📚 Supported Models</h3>
-                <div class="model-cards">
-                    <div class="model-card">
-                        <h4>ECC-33</h4>
-                        <p>European Communications Committee model for cellular networks</p>
-                    </div>
-                    <div class="model-card">
-                        <h4>SUI</h4>
-                        <p>Stanford University Interim model for wireless communications</p>
-                    </div>
-                    <div class="model-card">
-                        <h4>Okumura-Hata</h4>
-                        <p>Widely used empirical model for mobile communications</p>
-                    </div>
-                </div>
-            </div>
+        <footer class="main-footer">
+            <p>&copy; 2025 Pathloss Prediction Systems. All rights reserved.</p>
         </footer>
     </div>
-
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

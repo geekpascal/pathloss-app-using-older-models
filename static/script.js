@@ -1,115 +1,92 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("pathlossForm")
-  const resultsSection = document.getElementById("results")
-  const errorDiv = document.getElementById("error")
-  const predictBtn = form.querySelector(".predict-btn")
-  const btnText = predictBtn.querySelector(".btn-text")
-  const btnLoading = predictBtn.querySelector(".btn-loading")
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('pathlossForm');
+  const resultsContainer = document.getElementById('results-container');
+  const errorContainer = document.getElementById('error-container');
+  const submitButton = form.querySelector('.cta-button');
+  const btnText = submitButton.querySelector('.btn-text');
+  const btnLoader = submitButton.querySelector('.btn-loader');
+  const modelSelect = document.getElementById('model');
+  const modelCards = document.querySelectorAll('.model-card');
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault()
+  // Add click handlers to model cards
+  modelCards.forEach(card => {
+    card.addEventListener('click', () => {
+      const model = card.dataset.model;
+      modelSelect.value = model;
+      
+      // Update visual state
+      modelCards.forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      
+      // Add visual feedback
+      card.style.transform = 'scale(0.98)';
+      setTimeout(() => {
+        card.style.transform = '';
+      }, 150);
+    });
+  });
 
-    // Clear previous results and errors
-    hideResults()
-    hideError()
-
-    // Show loading state
-    showLoading()
-
-    try {
-      const formData = new FormData(form)
-
-      const response = await fetch("/predict", {
-        method: "POST",
-        body: formData,
-      })
-
-      const data = await response.json()
-
-      if (data.error) {
-        showError(data.error)
-      } else {
-        showResults(data)
+  // Update model card selection when dropdown changes
+  modelSelect.addEventListener('change', () => {
+    modelCards.forEach(card => {
+      card.classList.remove('selected');
+      if (card.dataset.model === modelSelect.value) {
+        card.classList.add('selected');
       }
-    } catch (error) {
-      console.error("Error:", error)
-      showError("Network error. Please check your connection and try again.")
-    } finally {
-      hideLoading()
-    }
-  })
+    });
+  });
 
-  function showLoading() {
-    predictBtn.disabled = true
-    btnText.style.display = "none"
-    btnLoading.style.display = "inline-block"
-  }
+  form.addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-  function hideLoading() {
-    predictBtn.disabled = false
-    btnText.style.display = "inline-block"
-    btnLoading.style.display = "none"
-  }
+      resultsContainer.style.display = 'none';
+      errorContainer.style.display = 'none';
 
-  function showResults(data) {
-    document.getElementById("pathlossValue").textContent = data.pathloss
-    document.getElementById("usedModel").textContent = data.model
-    document.getElementById("usedEnvironment").textContent = data.parameters.environment
+      btnText.textContent = 'Calculating...';
+      btnLoader.style.display = 'inline-block';
+      submitButton.disabled = true;
 
-    const parametersList = document.getElementById("parametersList")
-    parametersList.innerHTML = `
-            <li><strong>Frequency:</strong> ${data.parameters.frequency} MHz</li>
-            <li><strong>Distance:</strong> ${data.parameters.distance} km</li>
-            <li><strong>TX Height:</strong> ${data.parameters.tx_height} m</li>
-            <li><strong>RX Height:</strong> ${data.parameters.rx_height} m</li>
-        `
+      try {
+          const formData = new FormData(form);
+          const response = await fetch('/predict', {
+              method: 'POST',
+              body: new URLSearchParams(formData)
+          });
 
-    resultsSection.style.display = "block"
-    resultsSection.scrollIntoView({ behavior: "smooth" })
+          const data = await response.json();
+
+          if (data.error) {
+              showError(data.error);
+          } else {
+              displayResults(data);
+          }
+      } catch (error) {
+          showError('An unexpected error occurred. Please try again.');
+      } finally {
+          btnText.textContent = 'Calculate Pathloss';
+          btnLoader.style.display = 'none';
+          submitButton.disabled = false;
+      }
+  });
+
+  function displayResults(data) {
+      document.getElementById('pathlossValue').textContent = data.pathloss.toFixed(2);
+      document.getElementById('fsplValue').textContent = data.fspl.toFixed(2) + ' dB';
+      document.getElementById('additionalLossValue').textContent = data.additional_loss.toFixed(2) + ' dB';
+      document.getElementById('usedModel').textContent = data.model;
+      document.getElementById('usedEnvironment').textContent = data.parameters.environment;
+      document.getElementById('usedFrequency').textContent = data.parameters.frequency;
+      document.getElementById('usedDistance').textContent = data.parameters.distance;
+      document.getElementById('usedTxHeight').textContent = data.parameters.tx_height;
+      document.getElementById('usedRxHeight').textContent = data.parameters.rx_height;
+
+      resultsContainer.style.display = 'block';
+      resultsContainer.scrollIntoView({ behavior: 'smooth' });
   }
 
   function showError(message) {
-    errorDiv.textContent = message
-    errorDiv.style.display = "block"
-    errorDiv.scrollIntoView({ behavior: "smooth" })
+      errorContainer.textContent = message;
+      errorContainer.style.display = 'block';
+      errorContainer.scrollIntoView({ behavior: 'smooth' });
   }
-
-  function hideResults() {
-    resultsSection.style.display = "none"
-  }
-
-  function hideError() {
-    errorDiv.style.display = "none"
-  }
-
-  // Input validation
-  const numericInputs = form.querySelectorAll('input[type="number"]')
-  numericInputs.forEach((input) => {
-    input.addEventListener("input", function () {
-      if (this.value < 0) {
-        this.value = ""
-      }
-    })
-  })
-
-  // Add tooltips for model selection
-  const modelSelect = document.getElementById("model")
-  modelSelect.addEventListener("change", function () {
-    const selectedOption = this.options[this.selectedIndex]
-    if (selectedOption.value) {
-      let tooltip = ""
-      switch (selectedOption.value) {
-        case "ECC-33":
-          tooltip = "Best for cellular networks, frequency range 30 MHz - 3 GHz"
-          break
-        case "SUI":
-          tooltip = "Optimized for wireless communications, frequency range 1.9 - 11 GHz"
-          break
-        case "Okumura-Hata":
-          tooltip = "Most widely used, frequency range 150 MHz - 1.5 GHz (extended up to 2 GHz)"
-          break
-      }
-      selectedOption.title = tooltip
-    }
-  })
-})
+});
