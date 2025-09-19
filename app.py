@@ -189,62 +189,101 @@ def index():
 @app.route('/predict', methods=['POST'])
 def predict_pathloss():
     try:
-        # Get form data
-        frequency = float(request.form['frequency'])
-        distance = float(request.form['distance'])
-        tx_height = float(request.form['tx_height'])
-        rx_height = float(request.form['rx_height'])
+        # Get form data for ranges
+        frequency_min = float(request.form['frequency_min'])
+        frequency_max = float(request.form['frequency_max'])
+        distance_min = float(request.form['distance_min'])
+        distance_max = float(request.form['distance_max'])
+        tx_height_min = float(request.form['tx_height_min'])
+        tx_height_max = float(request.form['tx_height_max'])
+        rx_height_min = float(request.form['rx_height_min'])
+        rx_height_max = float(request.form['rx_height_max'])
+        step_size = int(request.form['step_size'])
         environment = request.form['environment']
         model = request.form['model']
         
         # Validate inputs
-        if frequency <= 0 or distance <= 0 or tx_height <= 0 or rx_height <= 0:
+        if (frequency_min <= 0 or frequency_max <= 0 or distance_min <= 0 or distance_max <= 0 or 
+            tx_height_min <= 0 or tx_height_max <= 0 or rx_height_min <= 0 or rx_height_max <= 0):
             return jsonify({'error': 'All parameters must be positive values'})
         
+        if (frequency_min >= frequency_max or distance_min >= distance_max or 
+            tx_height_min >= tx_height_max or rx_height_min >= rx_height_max):
+            return jsonify({'error': 'Minimum values must be less than maximum values'})
+        
         # Model-specific validations
-        if model == 'SUI' and (frequency < 1900 or frequency > 11000):
+        if model == 'SUI' and (frequency_min < 1900 or frequency_max > 11000):
             return jsonify({'error': 'SUI model is valid for frequencies between 1900-11000 MHz'})
         
-        if model == 'SUI' and distance > 8:
+        if model == 'SUI' and distance_max > 8:
             return jsonify({'error': 'SUI model is valid for distances up to 8 km'})
         
-        if model == 'Okumura-Hata' and frequency < 150:
+        if model == 'Okumura-Hata' and frequency_min < 150:
             return jsonify({'error': 'Okumura-Hata model is valid for frequencies above 150 MHz'})
         
-        if distance > 100:
+        if distance_max > 100:
             return jsonify({'error': 'Distance should be less than 100 km for accurate predictions'})
         
-        # Calculate path loss based on selected model
+        # Generate parameter ranges
+        frequency_range = generate_range(frequency_min, frequency_max, step_size)
+        distance_range = generate_range(distance_min, distance_max, step_size)
+        tx_height_range = generate_range(tx_height_min, tx_height_max, step_size)
+        rx_height_range = generate_range(rx_height_min, rx_height_max, step_size)
+        
+        # Calculate path loss for all combinations
         models = PathlossModels()
+        results = []
         
-        if model == 'ECC-33':
-            result = models.ecc33_model(frequency, distance, tx_height, rx_height, environment)
-        elif model == 'SUI':
-            result = models.sui_model(frequency, distance, tx_height, rx_height, environment)
-        elif model == 'Okumura-Hata':
-            result = models.okumura_hata_model(frequency, distance, tx_height, rx_height, environment)
-        else:
-            return jsonify({'error': 'Invalid model selected'})
+        for freq in frequency_range:
+            for dist in distance_range:
+                for tx_h in tx_height_range:
+                    for rx_h in rx_height_range:
+                        # Calculate path loss based on selected model
+                        if model == 'ECC-33':
+                            result = models.ecc33_model(freq, dist, tx_h, rx_h, environment)
+                        elif model == 'SUI':
+                            result = models.sui_model(freq, dist, tx_h, rx_h, environment)
+                        elif model == 'Okumura-Hata':
+                            result = models.okumura_hata_model(freq, dist, tx_h, rx_h, environment)
+                        else:
+                            return jsonify({'error': 'Invalid model selected'})
+                        
+                        if result is not None:
+                            # Calculate free space path loss for comparison
+                            fspl = 32.45 + 20 * math.log10(freq) + 20 * math.log10(dist)
+                            additional_loss = result - fspl
+                            
+                            results.append({
+                                'frequency': round(freq, 2),
+                                'distance': round(dist, 2),
+                                'tx_height': round(tx_h, 2),
+                                'rx_height': round(rx_h, 2),
+                                'pathloss': round(result, 2),
+                                'fspl': round(fspl, 2),
+                                'additional_loss': round(additional_loss, 2)
+                            })
         
-        if result is None:
-            return jsonify({'error': 'Calculation failed. Please check your input parameters.'})
+        if not results:
+            return jsonify({'error': 'No valid calculations could be performed. Please check your input parameters.'})
         
-        # Calculate free space path loss for comparison
-        fspl = 32.45 + 20 * math.log10(frequency) + 20 * math.log10(distance)
-        additional_loss = result - fspl
+        # Calculate summary statistics
+        pathloss_values = [r['pathloss'] for r in results]
+        min_pathloss = min(pathloss_values)
+        max_pathloss = max(pathloss_values)
+        avg_pathloss = sum(pathloss_values) / len(pathloss_values)
+        pathloss_range = max_pathloss - min_pathloss
         
         return jsonify({
-            'pathloss': round(result, 2),
-            'fspl': round(fspl, 2),
-            'additional_loss': round(additional_loss, 2),
+            'results': results,
+            'summary': {
+                'total_calculations': len(results),
+                'min_pathloss': round(min_pathloss, 2),
+                'max_pathloss': round(max_pathloss, 2),
+                'avg_pathloss': round(avg_pathloss, 2),
+                'pathloss_range': round(pathloss_range, 2)
+            },
             'model': model,
-            'parameters': {
-                'frequency': frequency,
-                'distance': distance,
-                'tx_height': tx_height,
-                'rx_height': rx_height,
-                'environment': environment
-            }
+            'environment': environment
         })
         
     except ValueError:
@@ -252,6 +291,14 @@ def predict_pathloss():
     except Exception as e:
         app.logger.error(f"Prediction error: {e}")
         return jsonify({'error': 'An error occurred during calculation'})
+
+def generate_range(min_val, max_val, steps):
+    """Generate a list of values between min_val and max_val with specified number of steps"""
+    if steps == 1:
+        return [min_val]
+    
+    step_size = (max_val - min_val) / (steps - 1)
+    return [min_val + i * step_size for i in range(steps)]
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=5000)

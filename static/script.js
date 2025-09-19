@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
       resultsContainer.style.display = 'none';
       errorContainer.style.display = 'none';
 
-      btnText.textContent = 'Calculating...';
+      btnText.textContent = 'Running Simulation...';
       btnLoader.style.display = 'inline-block';
       submitButton.disabled = true;
 
@@ -63,22 +63,41 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (error) {
           showError('An unexpected error occurred. Please try again.');
       } finally {
-          btnText.textContent = 'Calculate Pathloss';
+          btnText.textContent = 'Run Simulation';
           btnLoader.style.display = 'none';
           submitButton.disabled = false;
       }
   });
 
   function displayResults(data) {
-      document.getElementById('pathlossValue').textContent = data.pathloss.toFixed(2);
-      document.getElementById('fsplValue').textContent = data.fspl.toFixed(2) + ' dB';
-      document.getElementById('additionalLossValue').textContent = data.additional_loss.toFixed(2) + ' dB';
+      // Update summary information
       document.getElementById('usedModel').textContent = data.model;
-      document.getElementById('usedEnvironment').textContent = data.parameters.environment;
-      document.getElementById('usedFrequency').textContent = data.parameters.frequency;
-      document.getElementById('usedDistance').textContent = data.parameters.distance;
-      document.getElementById('usedTxHeight').textContent = data.parameters.tx_height;
-      document.getElementById('usedRxHeight').textContent = data.parameters.rx_height;
+      document.getElementById('usedEnvironment').textContent = data.environment;
+      document.getElementById('totalCalculations').textContent = data.summary.total_calculations;
+      
+      // Update summary statistics
+      document.getElementById('minPathloss').textContent = data.summary.min_pathloss + ' dB';
+      document.getElementById('maxPathloss').textContent = data.summary.max_pathloss + ' dB';
+      document.getElementById('avgPathloss').textContent = data.summary.avg_pathloss + ' dB';
+      document.getElementById('pathlossRange').textContent = data.summary.pathloss_range + ' dB';
+      
+      // Populate results table
+      const tableBody = document.getElementById('resultsTableBody');
+      tableBody.innerHTML = '';
+      
+      data.results.forEach(result => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+              <td>${result.frequency}</td>
+              <td>${result.distance}</td>
+              <td>${result.tx_height}</td>
+              <td>${result.rx_height}</td>
+              <td class="pathloss-cell">${result.pathloss}</td>
+              <td>${result.fspl}</td>
+              <td>${result.additional_loss}</td>
+          `;
+          tableBody.appendChild(row);
+      });
 
       resultsContainer.style.display = 'block';
       resultsContainer.scrollIntoView({ behavior: 'smooth' });

@@ -18,28 +18,54 @@
             <div class="card">
                 <form id="pathlossForm">
                     <fieldset>
-                        <legend>Simulation Parameters</legend>
+                        <legend>Simulation Parameters (Ranges)</legend>
                         <div class="form-grid">
                             <div class="form-group">
-                                <label for="frequency">Frequency (MHz)</label>
-                                <input type="number" id="frequency" name="frequency" placeholder="e.g., 900" required>
+                                <label for="frequency_min">Frequency Range (MHz)</label>
+                                <div class="range-inputs">
+                                    <input type="number" id="frequency_min" name="frequency_min" placeholder="Min: 150" required>
+                                    <span class="range-separator">to</span>
+                                    <input type="number" id="frequency_max" name="frequency_max" placeholder="Max: 11000" required>
+                                </div>
                                 <small class="input-hint">Range: 150-11000 MHz</small>
                             </div>
                             <div class="form-group">
-                                <label for="distance">Distance (km)</label>
-                                <input type="number" id="distance" name="distance" placeholder="e.g., 5" required>
+                                <label for="distance_min">Distance Range (km)</label>
+                                <div class="range-inputs">
+                                    <input type="number" id="distance_min" name="distance_min" placeholder="Min: 0.1" step="0.1" required>
+                                    <span class="range-separator">to</span>
+                                    <input type="number" id="distance_max" name="distance_max" placeholder="Max: 100" step="0.1" required>
+                                </div>
                                 <small class="input-hint">Range: 0.1-100 km</small>
                             </div>
                             <div class="form-group">
-                                <label for="tx_height">Transmitter Height (m)</label>
-                                <input type="number" id="tx_height" name="tx_height" placeholder="e.g., 30" required>
+                                <label for="tx_height_min">Transmitter Height Range (m)</label>
+                                <div class="range-inputs">
+                                    <input type="number" id="tx_height_min" name="tx_height_min" placeholder="Min: 10" required>
+                                    <span class="range-separator">to</span>
+                                    <input type="number" id="tx_height_max" name="tx_height_max" placeholder="Max: 200" required>
+                                </div>
                                 <small class="input-hint">Range: 10-200 m</small>
                             </div>
                             <div class="form-group">
-                                <label for="rx_height">Receiver Height (m)</label>
-                                <input type="number" id="rx_height" name="rx_height" placeholder="e.g., 1.5" required>
+                                <label for="rx_height_min">Receiver Height Range (m)</label>
+                                <div class="range-inputs">
+                                    <input type="number" id="rx_height_min" name="rx_height_min" placeholder="Min: 1" step="0.1" required>
+                                    <span class="range-separator">to</span>
+                                    <input type="number" id="rx_height_max" name="rx_height_max" placeholder="Max: 10" step="0.1" required>
+                                </div>
                                 <small class="input-hint">Range: 1-10 m</small>
                             </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="step_size">Step Size</label>
+                            <select id="step_size" name="step_size" required>
+                                <option value="5">5 steps</option>
+                                <option value="10" selected>10 steps</option>
+                                <option value="15">15 steps</option>
+                                <option value="20">20 steps</option>
+                            </select>
+                            <small class="input-hint">Number of calculation points per parameter</small>
                         </div>
                     </fieldset>
 
@@ -68,7 +94,7 @@
                     </fieldset>
 
                     <button type="submit" class="cta-button">
-                        <span class="btn-text">Calculate Pathloss</span>
+                        <span class="btn-text">Run Simulation</span>
                         <span class="btn-loader" style="display: none;"></span>
                     </button>
                 </form>
@@ -76,62 +102,59 @@
 
             <div id="results-container" class="results-card" style="display: none;">
                 <div class="result-header">
-                    <h2>Prediction Result</h2>
-                </div>
-                <div class="result-display">
-                    <div class="pathloss-main">
-                    <span id="pathlossValue" class="pathloss-value">--</span>
-                    <span class="pathloss-unit">dB</span>
-                    </div>
-                    <div class="pathloss-context">
-                        <div class="context-item">
-                            <span class="context-label">Free Space Loss:</span>
-                            <span id="fsplValue" class="context-value">-- dB</span>
+                    <h2>Simulation Results</h2>
+                    <div class="simulation-summary">
+                        <div class="summary-item">
+                            <span class="summary-label">Model:</span>
+                            <span id="usedModel" class="summary-value">--</span>
                         </div>
-                        <div class="context-item">
-                            <span class="context-label">Additional Loss:</span>
-                            <span id="additionalLossValue" class="context-value">-- dB</span>
+                        <div class="summary-item">
+                            <span class="summary-label">Environment:</span>
+                            <span id="usedEnvironment" class="summary-value">--</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Total Calculations:</span>
+                            <span id="totalCalculations" class="summary-value">--</span>
                         </div>
                     </div>
                 </div>
-                <div class="result-details">
-                    <h3>Configuration Details</h3>
-                    <div class="details-grid">
-                        <div class="detail-card">
-                            <div class="detail-header">
-                                <span class="detail-title">Model</span>
-                            </div>
-                            <span id="usedModel" class="detail-value">--</span>
+                
+                <div class="results-table-container">
+                    <table id="resultsTable" class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Frequency (MHz)</th>
+                                <th>Distance (km)</th>
+                                <th>Tx Height (m)</th>
+                                <th>Rx Height (m)</th>
+                                <th>Predicted Pathloss (dB)</th>
+                                <th>Free Space Loss (dB)</th>
+                                <th>Additional Loss (dB)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody">
+                            <!-- Results will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="results-summary">
+                    <div class="summary-stats">
+                        <div class="stat-card">
+                            <div class="stat-label">Min Pathloss</div>
+                            <div id="minPathloss" class="stat-value">-- dB</div>
                         </div>
-                        <div class="detail-card">
-                            <div class="detail-header">
-                                <span class="detail-title">Environment</span>
-                            </div>
-                            <span id="usedEnvironment" class="detail-value">--</span>
+                        <div class="stat-card">
+                            <div class="stat-label">Max Pathloss</div>
+                            <div id="maxPathloss" class="stat-value">-- dB</div>
                         </div>
-                        <div class="detail-card">
-                            <div class="detail-header">
-                                <span class="detail-title">Frequency</span>
-                            </div>
-                            <span id="usedFrequency" class="detail-value">-- MHz</span>
+                        <div class="stat-card">
+                            <div class="stat-label">Average Pathloss</div>
+                            <div id="avgPathloss" class="stat-value">-- dB</div>
                         </div>
-                        <div class="detail-card">
-                            <div class="detail-header">
-                                <span class="detail-title">Distance</span>
-                            </div>
-                            <span id="usedDistance" class="detail-value">-- km</span>
-                        </div>
-                        <div class="detail-card">
-                            <div class="detail-header">
-                                <span class="detail-title">Tx Height</span>
-                            </div>
-                            <span id="usedTxHeight" class="detail-value">-- m</span>
-                        </div>
-                        <div class="detail-card">
-                            <div class="detail-header">
-                                <span class="detail-title">Rx Height</span>
-                            </div>
-                            <span id="usedRxHeight" class="detail-value">-- m</span>
+                        <div class="stat-card">
+                            <div class="stat-label">Range</div>
+                            <div id="pathlossRange" class="stat-value">-- dB</div>
                         </div>
                     </div>
                 </div>
@@ -140,77 +163,6 @@
             <div id="error-container" class="error-box" style="display: none;"></div>
         </main>
 
-        <!-- Model Information Section -->
-        <div class="models-section">
-            <h2 class="section-title">Supported Models Details</h2>
-            <div class="models-grid">
-                <div class="model-card" data-model="ECC-33">
-                    <div class="model-header">
-                        <h3>ECC-33</h3>
-                        <span class="model-badge">European</span>
-                    </div>
-                    <p class="model-description">European Communications Committee model for cellular networks. Optimized for European terrain and propagation conditions.</p>
-                    <div class="model-specs">
-                        <div class="spec-item">
-                            <span class="spec-label">Frequency Range:</span>
-                            <span class="spec-value">150-2000 MHz</span>
-                        </div>
-                        <div class="spec-item">
-                            <span class="spec-label">Distance Range:</span>
-                            <span class="spec-value">1-100 km</span>
-                        </div>
-                        <div class="spec-item">
-                            <span class="spec-label">Best For:</span>
-                            <span class="spec-value">Cellular networks</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="model-card" data-model="SUI">
-                    <div class="model-header">
-                        <h3>SUI</h3>
-                        <span class="model-badge">Stanford</span>
-                    </div>
-                    <p class="model-description">Stanford University Interim model for wireless communications. Designed for broadband wireless access systems.</p>
-                    <div class="model-specs">
-                        <div class="spec-item">
-                            <span class="spec-label">Frequency Range:</span>
-                            <span class="spec-value">1900-11000 MHz</span>
-                        </div>
-                        <div class="spec-item">
-                            <span class="spec-label">Distance Range:</span>
-                            <span class="spec-value">0.1-8 km</span>
-                        </div>
-                        <div class="spec-item">
-                            <span class="spec-label">Best For:</span>
-                            <span class="spec-value">WiMAX, 4G/5G</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="model-card" data-model="Okumura-Hata">
-                    <div class="model-header">
-                        <h3>Okumura-Hata</h3>
-                        <span class="model-badge">Empirical</span>
-                    </div>
-                    <p class="model-description">Widely used empirical model for mobile communications. Based on extensive measurements in Tokyo area.</p>
-                    <div class="model-specs">
-                        <div class="spec-item">
-                            <span class="spec-label">Frequency Range:</span>
-                            <span class="spec-value">150-2000 MHz</span>
-                        </div>
-                        <div class="spec-item">
-                            <span class="spec-label">Distance Range:</span>
-                            <span class="spec-value">1-100 km</span>
-                        </div>
-                        <div class="spec-item">
-                            <span class="spec-label">Best For:</span>
-                            <span class="spec-value">Mobile communications</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <footer class="main-footer">
             <p>&copy; 2025 Pathloss Prediction Systems. All rights reserved.</p>
